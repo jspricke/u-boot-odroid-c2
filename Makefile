@@ -11,7 +11,7 @@ undefine MK_ARCH
 
 export LOCALVERSION:=-R$(REVISION)
 
-all: prepare build fip_create sign
+all: sign
 
 prepare:
 	test -d denx || git clone -v \
@@ -26,7 +26,7 @@ prepare:
 	https://github.com/afaerber/meson-tools.git meson-tools
 	cd meson-tools && git fetch
 
-build:
+build: prepare
 	cd denx && git verify-tag $(TAGPREFIX)$(TAG) 2>&1 | \
 	grep 'E872 DB40 9C1A 687E FBE8  6336 87F9 F635 D31D 7652'
 	cd denx && git reset --hard
@@ -39,7 +39,7 @@ build:
 	cd denx && make oldconfig
 	cd denx && make -j6
 
-fip_create:
+fip_create: build
 	cd hardkernel && git reset --hard
 	cd hardkernel && git checkout 205c7b3259559283161703a1a200b787c2c445a5
 	cd hardkernel && ( git branch -D build || true )
@@ -52,7 +52,7 @@ fip_create:
 	  --bl31 bl31.bin --bl33 bl33.bin fip.bin
 	cd hardkernel/fip/gxb && cat bl2.package fip.bin > boot_new.bin
 
-sign:
+sign: fip_create
 	cd meson-tools && make
 	meson-tools/amlbootsig hardkernel/fip/gxb/boot_new.bin u-boot.bin
 
